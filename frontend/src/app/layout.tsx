@@ -1,7 +1,29 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/ui/app-sidebar";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  navigationMenuTriggerStyle,
+} from "@/components/ui/navigation-menu"
+import Link from "next/link";
+import * as React from "react";
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button";
+import LogoKiichain from "/public/images/Logo_KiiChain_2024.png";
+import Image from "next/image";
+import Topbar from "@/components/ui/TopBar";
+import ClientLayout from "@/components/ClientLayout";
+import { AuthProvider } from "./context/authContext";
+import { CartProvider } from "./context/cartContext";
+import Footer from "@/components/footer";
+import WhatsAppButton from "@/components/whatsappButton";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -22,13 +44,20 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
   return (
+    <AuthProvider>
+    <CartProvider>
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}>
+      <div className="flex-grow">
+              <ClientLayout>{children}</ClientLayout>
+      </div>
+      <WhatsAppButton />
+        <Footer />
       </body>
     </html>
+    </CartProvider>
+    </AuthProvider>
   );
 }
