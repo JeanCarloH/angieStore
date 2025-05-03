@@ -6,32 +6,33 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
-import Rotation from "@/components/ui/rotation";
 import { useEffect, useState } from "react";
-import Carousel from "@/components/ui/carouselSize";
+import { db } from "../../firebase"; // Asegúrate de importar correctamente tu configuración de Firebase
+import { collection, getDocs } from "firebase/firestore";
 import ProductGrid from "@/components/productsGrid";
-const images = [
-  "/images/bannervals.jpg",
-  "/images/bannervals2.jpeg",
-];
 
 export default function Home() {
-  const [isDark, setIsDark] = useState(true);
+  const [banners, setBanners] = useState<string[]>([]);
+
+  // 🔥 Obtener imágenes desde Firestore
   useEffect(() => {
-    const handleStorageChange = () => {
-      setIsDark(localStorage.getItem("theme") === "dark");
+    const fetchBanners = async () => {
+      try {
+        const bannersRef = collection(db, "banners");
+        const querySnapshot = await getDocs(bannersRef);
+        const imageUrls = querySnapshot.docs.map((doc) => doc.data().imageUrl); // Extraer imageUrl de cada documento
+        setBanners(imageUrls);
+      } catch (error) {
+        console.error("Error al obtener banners:", error);
+      }
     };
 
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    fetchBanners();
   }, []);
-  const darkModeClasses = "bg-gradient-to-b from-[#05000f] to-[#1a0a2b] text-white !important";
-  const lightModeClasses = "bg-gradient-to-b from-white to-[#dcdcdc] text-black !important";
 
   return (
     <div className="flex flex-col gap-4 items-center justify-center">
-      <div className="w-full flex items-center justify-center mt-32 ">
+      <div className="w-full flex items-center justify-center mt-32">
         <Swiper
           modules={[Navigation, Pagination, Autoplay]}
           spaceBetween={0}
@@ -39,24 +40,28 @@ export default function Home() {
           navigation
           pagination={{ clickable: true }}
           autoplay={{ delay: 3000 }}
-          className="w-full h-[500px]" 
+          className="w-full h-[500px]"
         >
-          {images.map((src, index) => (
-         <SwiperSlide key={index}>
-          <div className="relative w-full h-full overflow-hidden"> 
-           <Image
-             src={src}
-             alt={`Slide ${index + 1}`}
-             layout="fill"
-             objectFit="cover"
-             className="w-full h-full"
-           />
-         </div>
-       </SwiperSlide>
-       
-          ))}
+          {banners.length > 0 ? (
+            banners.map((src, index) => (
+              <SwiperSlide key={index}>
+                <div className="relative w-full h-full overflow-hidden">
+                  <Image
+                    src={src}
+                    alt={`Slide ${index + 1}`}
+                    layout="fill"
+                    objectFit="cover"
+                    className="w-full h-full"
+                  />
+                </div>
+              </SwiperSlide>
+            ))
+          ) : (
+            <div className="w-full h-[500px] flex items-center justify-center text-gray-500">
+              No hay banners disponibles.
+            </div>
+          )}
         </Swiper>
-
       </div>
       <ProductGrid />
     </div>

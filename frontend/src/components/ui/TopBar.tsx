@@ -33,17 +33,8 @@ export default function TopBar() {
     }
   }, []);
   const categories = [
-    "Basicas-americanas",
-    "Sets",
-    "Jeans-americanos",
-    "Faldas",
-    "Shorts",
-    "Vestidos",
-    "Bodys",
-    "Deportivos",
-    "Calzado",
-    "Bolsos",
-    "Camisetas"
+   "general",
+   "de temporada"
   ];
   const toggleTheme = () => {
     const newTheme = !isDark;
@@ -60,7 +51,7 @@ export default function TopBar() {
         {/* Logo */}
         <div className="border-r-2 border-black pr-4">
           <Link href="/">
-          <Image src="/images/logovals.jpeg" alt="vals" width={200} height={1} className={`cursor-pointer transition-all duration-300 ${isDark ? "" : ""}`} style={{ height: "65px" }} />
+            <Image src="/images/logovals.jpeg" alt="vals" width={200} height={1} className={`cursor-pointer transition-all duration-300 ${isDark ? "" : ""}`} style={{ height: "65px" }} />
           </Link>
         </div>
 
@@ -68,21 +59,6 @@ export default function TopBar() {
         <div className="hidden md:flex flex-1 justify-center">
           <NavigationMenu>
             <NavigationMenuList className="flex space-x-6">
-              <NavigationMenuItem>
-                <NavigationMenuLink asChild>
-                  <Link href="/gender/Hombre" className="text-lg font-semibold hover:underline">
-                    Hombres
-                  </Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-
-              <NavigationMenuItem>
-                <NavigationMenuLink asChild>
-                  <Link href="/gender/Mujer" className="text-lg font-semibold hover:underline">
-                    Mujeres
-                  </Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
 
               <NavigationMenuItem>
                 <NavigationMenuTrigger className="text-lg font-semibold hover:underline">Categorías</NavigationMenuTrigger>
@@ -90,7 +66,7 @@ export default function TopBar() {
 
                   <ul className="grid w-[100px] gap-3 p-4 md:w-[100px] md:grid-cols-2 lg:w-[380px] ml-3">
                     {categories.map((category, index) => (
-                      <ListItem key={index}    href={`/category/${category}`} title={category}  className="text-lg font-semibold hover:bg-rosaHover bg-transparent">
+                      <ListItem key={index} href={`/category/${category}`} title={category} className="text-lg font-semibold hover:bg-rosaHover bg-transparent">
                       </ListItem>
                     ))}
                   </ul>
@@ -109,11 +85,33 @@ export default function TopBar() {
               ) : (
                 <div></div>
               )}
-                   {user ? (
+              {user ? (
                 <NavigationMenuItem>
                   <NavigationMenuLink asChild>
                     <Link href="/seeProducts" className="text-lg font-semibold hover:underline">
-                     Ver productos
+                      Productos
+                    </Link>
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+              ) : (
+                <div></div>
+              )}
+              {user ? (
+                <NavigationMenuItem>
+                  <NavigationMenuLink asChild>
+                    <Link href="/orders" className="text-lg font-semibold hover:underline">
+                      Ordenes
+                    </Link>
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+              ) : (
+                <div></div>
+              )}
+                {user ? (
+                <NavigationMenuItem>
+                  <NavigationMenuLink asChild>
+                    <Link href="/handleBanner" className="text-lg font-semibold hover:underline">
+                      Banners
                     </Link>
                   </NavigationMenuLink>
                 </NavigationMenuItem>
@@ -121,14 +119,15 @@ export default function TopBar() {
                 <div></div>
               )}
 
+
             </NavigationMenuList>
           </NavigationMenu>
         </div>
-        <div className="w-[1px] h-[60px]  border-r-2 border-black hidden md:flex"></div>
+        <div className="w-[1px] h-[60px]  border-r-2 border-black hidden md:flex mr-4"></div>
         {/* Botón de Cambio de Tema */}
-        <div className="hidden md:flex items-center px-4 cursor-pointer" onClick={toggleTheme}>
+     {/*   <div className="hidden md:flex items-center px-4 cursor-pointer" onClick={toggleTheme}>
           {isDark ? <Sun size={26} className="text-yellow-400 transition-all duration-300 hover:scale-110" /> : <Moon size={26} className="text-gray-800 transition-all duration-300 hover:scale-110" />}
-        </div>
+        </div> */}
         <div>
           {user ? (
             <Button onClick={logout} className="hidden md:block rounded-xl">
@@ -166,24 +165,34 @@ export default function TopBar() {
                     <span className={`transition-transform ${isOpen ? "rotate-180" : ""}`}>▼</span>
                   </button>
                   {isOpen && (
-                    <div className="bg-rosa p-4 rounded-md shadow-lg mt-2">
-                      <ul className="grid w-[300px] gap-3 p-4 overflow-y-auto max-h-[300px] hide-scrollbar">
-                        {categories.map((category, index) => (
-                          <li key={index}>
-                            <Link
-                             href={`/category/${category}`} 
-                               className="block p-2 font-semibold text-[clamp(12px, 4vw, 18px)] "
-                            >
-                              {category}
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                   <div className="bg-rosa p-4 rounded-md shadow-lg mt-2">
+                   <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 p-4 overflow-y-auto max-h-[300px] hide-scrollbar">
+                     {categories.map((category, index) => (
+                       <li key={index} className="w-full">
+                         <Link
+                           href={`/category/${category}`}
+                           className="block p-2 font-semibold text-[clamp(12px, 4vw, 18px)] text-center border border-gray-300 rounded-md bg-white hover:bg-gray-100 transition"
+                         >
+                           {category}
+                         </Link>
+                       </li>
+                     ))}
+                   </ul>
+                 </div>
+                 
                   )}
                 </div>
                 {user && (
                   <Link href="/addProduct" className="text-lg font-semibold hover:underline">Agregar Productos</Link>
+                )}
+                {user && (
+                  <Link href="/seeProducts" className="text-lg font-semibold hover:underline">Productos</Link>
+                )}
+                {user && (
+                  <Link href="/orders" className="text-lg font-semibold hover:underline">Ordenes</Link>
+                )}
+                {user && (
+                  <Link href="/handleBanner" className="text-lg font-semibold hover:underline">Banners</Link>
                 )}
 
                 {user ? (

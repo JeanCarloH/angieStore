@@ -19,6 +19,7 @@ export default function ProductGrid() {
     id: string;
     name: string;
     price: number;
+    availability: string;
     images: string[]; // Ahora es un array de strings (Base64)
     sizes: string | any; // Añadir la propiedad sizes
   };
@@ -65,7 +66,7 @@ export default function ProductGrid() {
         id: product.id,
         name: product.name,
         price: product.price,
-        sizes: product.sizes,
+        availability: product.availability,
         image: product.images[0],
         quantity: 1,
       });
@@ -77,15 +78,7 @@ export default function ProductGrid() {
     return cart.reduce((total, item) => total + item.price * item.quantity, 0).toFixed(2);
   };
   const handleCheckout = () => {
-    const phoneNumber = "573218516928"; // Número de WhatsApp (sin el +)
-    const message = encodeURIComponent(
-      `Hola, quiero hacer un pedido:\n\n` +
-        cart.map((item) => `🛒 ${item.name} ${item.sizes} - ${item.quantity} x $${item.price}`).join("\n") +
-        `\n\n💰 Total: $${getTotal()}`
-    );
-  
-    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
-    window.open(whatsappUrl, "_blank"); // Abrir en una nueva pestaña
+    router.push(`/productDetails`);
   };
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 2; 

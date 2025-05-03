@@ -16,7 +16,13 @@ import loadingImage from "/public/images/bannervals.jpg";
 
 export default function CategoryPage() {
       const { addToCart, cart, removeFromCart } = useCart();
-  const { category } = useParams(); // Obtiene la categoría desde la URL
+      const { category } = useParams(); // Obtiene la categoría desde la URL
+      const formattedCategory = typeof category === "string"
+        ? decodeURIComponent(category).replace(/\b\w/g, (char) => char.toUpperCase())
+        : "";
+      
+      console.log("Categoría formateada:", formattedCategory);
+      
   interface Product {
     id: string;
     category: string;
@@ -41,9 +47,9 @@ export default function CategoryPage() {
   
         // Filtrar productos por categoría
         const filteredProducts = allProducts.filter(
-          (product) => product.category === category
+          (product) => product.category === formattedCategory
         );
-  
+        console.log("productos filtrados", filteredProducts)
         setProducts(filteredProducts);
       } catch (error) {
         console.error("Error al obtener productos:", error);
@@ -66,22 +72,14 @@ export default function CategoryPage() {
     return cart.reduce((total, item) => total + item.price * item.quantity, 0).toFixed(2);
   };
   const handleCheckout = () => {
-    const phoneNumber = "573218516928"; // Número de WhatsApp (sin el +)
-    const message = encodeURIComponent(
-      `Hola, quiero hacer un pedido:\n\n` +
-        cart.map((item) => `🛒 ${item.name} ${item.sizes} - ${item.quantity} x $${item.price}`).join("\n") +
-        `\n\n💰 Total: $${getTotal()}`
-    );
-  
-    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
-    window.open(whatsappUrl, "_blank"); // Abrir en una nueva pestaña
+    router.push(`/productDetails`);
   };
   const router = useRouter();
   const [loading , setLoading] = useState(true);
   return (
     <>
     <div className="max-w-6xl mx-auto p-6 mt-32">
-      <h1 className="text-3xl font-bold text-center mb-6">Categoría: {category}</h1>
+      <h1 className="text-3xl font-bold text-center mb-6">Categoría: {formattedCategory}</h1>
       {loading ? (
         <div className="flex justify-center items-center min-h-[300px]">
         <Image src={loadingImage} alt="Cargando..." width={400} height={100} className="animate-pulse rounded-3xl" />

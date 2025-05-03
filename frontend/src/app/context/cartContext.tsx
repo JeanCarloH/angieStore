@@ -7,7 +7,7 @@ type CartItem = {
   id: string;
   name: string;
   price: number;
-  sizes: string[];
+  availability: string;
   image: string;
   quantity: number;
 };
@@ -72,7 +72,6 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
             ? {
                 ...item,
                 quantity: product.quantity,
-                sizes: [...product.sizes], // 🔥 Fusiona correctamente sin duplicar
               }
             : item
         );

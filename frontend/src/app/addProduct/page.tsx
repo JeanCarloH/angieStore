@@ -3,39 +3,54 @@
 import { useState } from "react";
 import { addDoc, collection } from "firebase/firestore";
 import { db } from "../../../firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage"; // Importamos funciones de Firebase Storage
+import { storage } from "../../../firebase"; // Asegúrate de haber configurado Firebase Storage
 import Image from "next/image";
+import Swal from "sweetalert2"; // Importamos SweetAlert2
+
 export default function AddProductPage() {
   const [product, setProduct] = useState({
     name: "",
     price: "",
     description: "",
     category: "",
-    gender: "",
-    images: [] as File[], // Lista de imágenes en archivos
-    sizes: [] as string[], // Lista de tallas disponibles
+    availability: "",
+    images: [] as File[], // Imágenes en formato File (aún no subidas)
   });
 
-  const [sizeInput, setSizeInput] = useState(""); // Para agregar tallas dinámicamente
-  const [previewImages, setPreviewImages] = useState<string[]>([]); // URLs de previsualización de imágenes
+  const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  // Manejo de cambios en los inputs
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setProduct({ ...product, [e.target.name]: e.target.value });
   };
 
-  // Manejar selección de imágenes
+  // Manejar selección de imágenes con validación de tamaño
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
 
     const selectedFiles = Array.from(e.target.files);
+    const validFiles: File[] = [];
+    const newPreviewImages: string[] = [];
+
+    selectedFiles.forEach((file) => {
+      if (file.size > 1024 * 1024) {
+        Swal.fire({
+          icon: "error",
+          title: "Imagen demasiado grande",
+          text: `La imagen ${file.name} pesa más de 1MB. Por favor, redúcela antes de subirla.`,
+        });
+      } else {
+        validFiles.push(file);
+        newPreviewImages.push(URL.createObjectURL(file));
+      }
+    });
 
     setProduct((prev) => ({
       ...prev,
-      images: [...prev.images, ...selectedFiles], // Solo archivos File[]
+      images: [...prev.images, ...validFiles],
     }));
-
-    const newPreviewImages = selectedFiles.map((file) => URL.createObjectURL(file));
-    setPreviewImages((prev) => [...prev, ...newPreviewImages]); // Solo URLs (string[])
+    setPreviewImages((prev) => [...prev, ...newPreviewImages]);
   };
 
   // Eliminar una imagen de la lista
@@ -48,27 +63,19 @@ export default function AddProductPage() {
     setPreviewImages(previewImages.filter((_, i) => i !== index));
   };
 
-  // Agregar talla
-  const handleAddSize = () => {
-    if (sizeInput.trim() && !product.sizes.includes(sizeInput)) {
-      setProduct({ ...product, sizes: [...product.sizes, sizeInput] });
-      setSizeInput("");
+  // Función para subir las imágenes a Firebase Storage
+  const uploadImages = async (images: File[]): Promise<string[]> => {
+    const imageURLs: string[] = [];
+
+    for (const image of images) {
+      const imageRef = ref(storage, `products/${image.name}`);
+      const snapshot = await uploadBytes(imageRef, image);
+      const imageUrl = await getDownloadURL(snapshot.ref);
+      imageURLs.push(imageUrl);
     }
-  };
 
-  // Eliminar talla
-  const handleRemoveSize = (size: string) => {
-    setProduct({ ...product, sizes: product.sizes.filter((s) => s !== size) });
+    return imageURLs;
   };
-  const convertFileToBase64 = async (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
-    });
-  };
-
 
   // Enviar formulario
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,37 +83,41 @@ export default function AddProductPage() {
     setLoading(true);
 
     try {
-      // 🔹 1. Convertir imágenes a Base64
-      const base64Images = await Promise.all(product.images.map(file => convertFileToBase64(file)));
+      // Subir las imágenes a Firebase Storage
+      const imageUrls = await uploadImages(product.images);
 
-      // 🔹 2. Crear objeto sin archivos File, solo Base64
       const newProduct = {
         name: product.name,
         price: parseFloat(product.price),
         description: product.description,
         category: product.category,
-        gender: product.gender,
-        images: base64Images, // 🔥 Guardar en Firestore como Base64
-        sizes: product.sizes,
+        availability: parseFloat(product.availability),
+        images: imageUrls, // Guardamos las URLs de las imágenes
       };
 
-      // 🔹 3. Guardar en Firestore
+      // Agregar el producto a Firestore
       const docRef = await addDoc(collection(db, "products"), newProduct);
-      console.log("Producto agregado con éxito, ID:", docRef.id);
-      alert(`Producto agregado con éxito! ID: ${docRef.id}`);
 
-      // 🔹 4. Limpiar el formulario
-      setProduct({ name: "", price: "", description: "", category: "", gender: "", images: [], sizes: [] });
+      Swal.fire({
+        icon: "success",
+        title: "Producto agregado",
+        text: `El producto ha sido agregado con éxito! ID: ${docRef.id}`,
+      });
+
+      // Resetear formulario
+      setProduct({ name: "", price: "", description: "", category: "", availability: "", images: [] });
       setPreviewImages([]);
     } catch (error) {
       console.error("Error al guardar el producto:", error);
-      alert("Error al agregar el producto.");
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Hubo un problema al agregar el producto.",
+      });
     }
 
     setLoading(false);
   };
-
-
 
   return (
     <div className="max-w-lg mx-auto p-6 bg-white shadow-lg rounded-lg mt-36 mb-10">
@@ -156,29 +167,24 @@ export default function AddProductPage() {
           <label className="block font-medium">Categoría</label>
           <select name="category" value={product.category} onChange={handleChange} required className="w-full p-2 border rounded-md">
             <option value="">Seleccionar categoría</option>
-            <option value="Basicas-americanas">Básicas americanas</option>
-            <option value="Sets">Sets</option>
-            <option value="Jeans-americanos">Jeans americanos</option>
-            <option value="Faldas">Faldas</option>
-            <option value="Shorts">Shorts</option>
-            <option value="Vestidos">Vestidos</option>
-            <option value="Bodys">Bodys</option>
-            <option value="Deportivos">Deportivos</option>
-            <option value="Calzado">Calzado</option>
-            <option value="Bolsos">Bolsos</option>
-            <option value="Camisetas">Camisetas</option>
+            <option value="General">General</option>
+            <option value="De Temporada">De Temporada</option>
           </select>
-
         </div>
-        {/* Género (Hombre o Mujer) */}
+        
+        {/* Disponibilidad */}
         <div>
-          <label className="block font-medium">Género</label>
-          <select name="gender" value={product.gender} onChange={handleChange} required className="w-full p-2 border rounded-md">
-            <option value="">Seleccionar género</option>
-            <option value="Hombre">Hombre</option>
-            <option value="Mujer">Mujer</option>
-          </select>
+          <label className="block font-medium">Disponibilidad</label>
+          <input
+            type="number"
+            name="availability"
+            value={product.availability}
+            onChange={handleChange}
+            required
+            className="w-full p-2 border rounded-md"
+          />
         </div>
+
         {/* Subir Imágenes */}
         <div>
           <label className="block font-medium">Imágenes del Producto</label>
@@ -189,6 +195,7 @@ export default function AddProductPage() {
             onChange={handleImageChange}
             className="w-full p-2 border rounded-md"
           />
+          <p className="text-sm text-gray-500 mt-1">Máximo 1MB por imagen</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {previewImages.map((src, index) => (
               <div key={index} className="relative">
@@ -205,32 +212,9 @@ export default function AddProductPage() {
           </div>
         </div>
 
-        {/* Tallas dinámicas */}
-        <div>
-          <label className="block font-medium">Tallas disponibles</label>
-          <div className="flex space-x-2">
-            <input
-              type="text"
-              value={sizeInput}
-              onChange={(e) => setSizeInput(e.target.value)}
-              placeholder="Ej: S, M, L, 42, 44..."
-              className="w-full p-2 border rounded-md"
-            />
-            <button type="button" onClick={handleAddSize} className="px-3 py-1 bg-blue-500 text-white rounded-md">+</button>
-          </div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {product.sizes.map((size, index) => (
-              <div key={index} className="flex items-center bg-gray-200 p-1 rounded-md">
-                <span className="px-2">{size}</span>
-                <button type="button" onClick={() => handleRemoveSize(size)} className="text-red-500 text-sm">✕</button>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Botón de Enviar */}
-        <button type="submit" className="w-full bg-black text-white py-2 rounded-md hover:bg-gray-800 transition">
-          Agregar Producto
+        <button type="submit" className="w-full bg-black text-white py-2 rounded-md hover:bg-gray-800 transition" disabled={loading}>
+          {loading ? "Agregando..." : "Agregar Producto"}
         </button>
       </form>
     </div>
